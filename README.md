@@ -1,3 +1,5 @@
+![LocalDocTranslator Thumbnail](thumbnail.jpg)
+
 # LocalDocTranslator
 
 LocalDocTranslator はプライバシーを重視したローカル環境で動作するドキュメント翻訳ツールです。PDF または TXT ファイルからテキストを抽出し、抽出時によく発生するノイズ（ページ番号、行番号、ハイフネーションなど）をクリーンアップします。また、[Ollama](https://ollama.com/) 経由で最適なローカルの大規模言語モデル（LLM）を自動検出し、非常に自然な日本語に翻訳します。
