@@ -1,4 +1,4 @@
-![LocalDocTranslator Thumbnail](thumbnail_v3.jpg)
+![LocalDocTranslator Thumbnail](thumbnail_v5.jpg)
 
 # LocalDocTranslator
 
