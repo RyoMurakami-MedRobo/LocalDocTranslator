@@ -5,6 +5,7 @@ import argparse
 import urllib.request
 import json
 import re
+import subprocess
 from pypdf import PdfReader
 
 # デフォルト設定
@@ -32,35 +33,55 @@ Follow these guidelines strictly:
 - Do not output any explanation, translator notes, or intro/outro. Output ONLY the translated Japanese text.
 """
 
-def get_available_models() -> list:
-    """ローカルの Ollama インスタンスから利用可能なモデルのリストを取得します。"""
+def check_and_prepare_ollama(requested_model: str) -> str:
+    """Ollamaの起動状態を確認し、必要なモデルがなければ自動でダウンロード(pull)を提案します。"""
     try:
         req = urllib.request.Request(OLLAMA_TAGS_URL, method="GET")
         with urllib.request.urlopen(req, timeout=5) as res:
             data = json.loads(res.read().decode("utf-8"))
-            return [model["name"] for model in data.get("models", [])]
+            available_models = [m["name"] for m in data.get("models", [])]
     except Exception as e:
-        print(f"警告: Ollama からモデルを取得できませんでした ({e})。Ollama が起動しているか確認してください。", file=sys.stderr)
-        return []
+        print(f"\n[エラー] Ollama に接続できませんでした。({e})", file=sys.stderr)
+        print("Ollama がインストールされ、起動しているか確認してください。", file=sys.stderr)
+        print("インストールガイド: https://ollama.com/download\n", file=sys.stderr)
+        sys.exit(1)
 
-def auto_detect_model() -> str:
-    """優先順位リストに基づいて、利用可能な最適なモデルを検出します。"""
-    available_models = get_available_models()
-    if not available_models:
-        return "qwen2.5:14b" # フォールバックのデフォルト
-        
-    for preferred_model in MODEL_PRIORITY:
-        if preferred_model in available_models:
-            print(f"自動検出された最適なモデル: {preferred_model}")
-            return preferred_model
+    target_model = requested_model
+    if target_model.lower() == "auto":
+        if not available_models:
+            target_model = "qwen2.5:14b" # ダウンロード用のデフォルト推奨モデル
+        else:
+            for preferred in MODEL_PRIORITY:
+                if preferred in available_models:
+                    print(f"自動検出された最適なモデル: {preferred}")
+                    return preferred
+            # 優先モデルが見つからない場合、embedding モデル以外の最初のモデルを選択
+            for model in available_models:
+                if "embed" not in model.lower():
+                    print(f"自動検出されたフォールバックモデル: {model}")
+                    return model
+            target_model = available_models[0]
+
+    # モデルがローカルにあるか確認（:latest の省略表記も考慮）
+    if target_model not in available_models and f"{target_model}:latest" not in available_models:
+        print(f"\nローカルにモデル '{target_model}' が見つかりません。")
+        ans = input(f"自動でダウンロード(pull)しますか？ (y/n) [y]: ")
+        if ans.lower() in ['', 'y', 'yes']:
+            print(f"\n'{target_model}' をダウンロード中... (サイズが大きい場合は数分〜数十分かかります)")
+            try:
+                subprocess.run(["ollama", "pull", target_model], check=True)
+                print("\nダウンロードが完了しました！\n")
+            except FileNotFoundError:
+                print("\nエラー: 'ollama' コマンドが見つかりません。CLIツールがインストールされているか確認してください。", file=sys.stderr)
+                sys.exit(1)
+            except subprocess.CalledProcessError:
+                print("\nエラー: モデルのダウンロードに失敗しました。", file=sys.stderr)
+                sys.exit(1)
+        else:
+            print("処理を中断します。", file=sys.stderr)
+            sys.exit(1)
             
-    # 優先モデルが見つからない場合、embedding モデル以外の最初のモデルを選択
-    for model in available_models:
-        if "embed" not in model.lower():
-            print(f"自動検出されたフォールバックモデル: {model}")
-            return model
-            
-    return available_models[0] if available_models else "qwen2.5:14b"
+    return target_model
 
 def extract_text_from_pdf(pdf_path: str) -> str:
     """pypdf を使用して PDF ファイルから生テキストを抽出します。"""
@@ -214,11 +235,9 @@ def main():
         print(f"エラー: 入力ファイル '{input_path}' が見つかりません。", file=sys.stderr)
         sys.exit(1)
         
-    # モデルの決定
-    model = args.model
-    if model.lower() == "auto":
-        print("最適なモデルを自動検出中...")
-        model = auto_detect_model()
+    # モデルの確認と準備
+    print("Ollamaの状態とモデルを確認中...")
+    model = check_and_prepare_ollama(args.model)
         
     # 1. 抽出
     is_pdf = input_path.lower().endswith(".pdf")
