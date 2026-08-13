@@ -97,4 +97,4 @@ PDFからテキストを抽出中: sample.pdf
 ## 連絡先
 
 本ツールに関するお問い合わせは、以下の連絡先までお願いいたします。
-- 開発者: 村上 遼 (Ryo Murakami)
+- 村上 遼 (Ryo Murakami) ryo.murakami.0913.medtech@gmail.com
