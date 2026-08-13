@@ -36,17 +36,28 @@ LocalDocTranslator はプライバシーを重視したローカル環境で動�
 
 ## 使い方
 
-`.pdf` または `.txt` ファイルのパスを指定してスクリプトを実行します:
+`.pdf` または `.txt` ファイルのパスを指定してスクリプトを実行します。このツールは **Windows, Mac, Linux** のすべてのOSで共通して動作します（特別な依存関係はなく標準のPython機能と `pypdf` を使用しています）。
 
+**Mac / Linux の場合:**
 ```bash
 ./local_document_translator.py /path/to/your/document.pdf
+```
+
+**Windows の場合:**
+```cmd
+python local_document_translator.py C:\path\to\your\document.pdf
 ```
 
 ### オプション
 
 - **`-m, --model`**: 使用する Ollama モデルを指定します。デフォルトは `auto` で、最適な利用可能なモデルが自動検出されます。
+  **Mac / Linux:**
   ```bash
   ./local_document_translator.py document.pdf -m llama3.2:3b
+  ```
+  **Windows:**
+  ```cmd
+  python local_document_translator.py document.pdf -m llama3.2:3b
   ```
 - **`-o, --output`**: 出力ファイルのパスを指定します。指定しない場合、`[元のファイル名]_ja.txt` として保存されます。
 - **`--save-clean-text`**: 翻訳前のクリーンアップされた英語のテキストを保存します（テキスト抽出のデバッグに便利です）。
